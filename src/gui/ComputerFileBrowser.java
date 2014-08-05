@@ -82,14 +82,14 @@ public class ComputerFileBrowser extends JPanel
 		currentPath = new JLabel(); 
 		fileBrowser = new FileBrowser();
 		
-		this.setPreferredSize(window_dim);
+		//this.setPreferredSize(window_dim);
 		this.setLayout(new BorderLayout());
 		
 		this.initFileTree();
 		this.initFileList();
 		
         JScrollPane listScrollPane = new JScrollPane(fileList);
-        listScrollPane.setPreferredSize(list_dim);
+        //listScrollPane.setPreferredSize(list_dim);
         this.add(listScrollPane, BorderLayout.PAGE_END);
         
 		JScrollPane treeScroll = new JScrollPane(fileTree);

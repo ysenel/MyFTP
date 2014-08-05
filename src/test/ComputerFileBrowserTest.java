@@ -1,5 +1,6 @@
 package test;
 import gui.ComputerFileBrowser;
+import gui.MainPanel;
 
 import java.io.File;
 import java.nio.file.FileSystems;
@@ -29,10 +30,11 @@ public class ComputerFileBrowserTest
             }
         }
         
-        JFrame frame = new JFrame("TopLevelContainer");
+        JFrame frame = new JFrame("MyFTP");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        frame.add(new ComputerFileBrowser());
+        //frame.add(new ComputerFileBrowser());
+        frame.add(new MainPanel());
 
         frame.pack();
         frame.setVisible(true);
