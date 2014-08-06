@@ -6,6 +6,12 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Image;
+import java.awt.Point;
+import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,14 +27,20 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTable;
 import javax.swing.JTree;
 import javax.swing.ListCellRenderer;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
+import javax.swing.Timer;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.filechooser.FileSystemView;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableColumn;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
@@ -40,6 +52,12 @@ import file.MyFtpFile;
 
 public class ComputerFileBrowser extends JPanel
 {
+	/* For capturing simple and double clicks. */
+	private final static int clickInterval = 
+			(Integer)Toolkit.getDefaultToolkit().getDesktopProperty("awt.multiClickInterval");
+	private boolean wasDoubleClick = false;
+	private Timer clickTimer;
+	
 	/* Temp sizes, waiting for a better solution. */
 	private int window_height = 600;
 	private int window_width = 400;
@@ -50,34 +68,49 @@ public class ComputerFileBrowser extends JPanel
 	private Dimension list_dim = 
 			new Dimension(window_width, window_height/2);
 	
+	private static int icon_width = 25;
+	private static int icon_height = 25;
+	private static int icon_margin = 6;
+	
 	public static final ImageIcon ICON_FOLDER = 
 			new ImageIcon("ressources/images/folder.png");
 	
 	public static final ImageIcon ICON_FOLDER_REDIM =
-			new ImageIcon(ICON_FOLDER.getImage().getScaledInstance(25, 25, Image.SCALE_DEFAULT));
+			new ImageIcon(ICON_FOLDER.getImage().getScaledInstance(icon_width, icon_height, Image.SCALE_DEFAULT));
 	
 	public static final ImageIcon ICON_FILE = 
 			new ImageIcon("ressources/images/file_png.png");
 	
 	public static final ImageIcon ICON_FILE_REDIM =
-			new ImageIcon(ICON_FILE.getImage().getScaledInstance(25, 25, Image.SCALE_DEFAULT));
+			new ImageIcon(ICON_FILE.getImage().getScaledInstance(icon_width, icon_height, Image.SCALE_DEFAULT));
 	
 	private JLabel currentPath;
 	
 	private JTree fileTree;
 	private DefaultTreeModel fileTreeModel;
 	
-	private JList fileList;
+	/*private JList fileList;
 	private DefaultListModel fileListModel;
-	private ListSelectionModel fileListSelectionModel;
+	private ListSelectionModel fileListSelectionModel;*/
 	
 	private FileBrowser fileBrowser;
 	private Path homePath;
+	
+	/* JTable showing the files */
+	
+	private JTable fileTable;
+	private FileTableModel fileTableModel;
+    private ListSelectionListener listSelectionListener;
+    private MouseAdapter tableMouseAdapter;
 	
 	
 	public ComputerFileBrowser()
 	{
 		homePath = new File(System.getProperty("user.home")).toPath();
+		/*System.out.println("path: " + homePath.toString());
+		System.out.println("namecount: " + homePath.getNameCount());
+		System.out.println("getName(0): " + homePath.getName(0));
+		System.out.println("getName(1): " + homePath.getName(1));*/
 		
 		currentPath = new JLabel(); 
 		fileBrowser = new FileBrowser();
@@ -86,11 +119,15 @@ public class ComputerFileBrowser extends JPanel
 		this.setLayout(new BorderLayout());
 		
 		this.initFileTree();
-		this.initFileList();
+		//this.initFileList();
+		this.initFileTable();
 		
-        JScrollPane listScrollPane = new JScrollPane(fileList);
+		JScrollPane tableScroll = new JScrollPane(fileTable);
+		this.add(tableScroll, BorderLayout.PAGE_END);
+		
+        //JScrollPane listScrollPane = new JScrollPane(fileList);
         //listScrollPane.setPreferredSize(list_dim);
-        this.add(listScrollPane, BorderLayout.PAGE_END);
+        //this.add(listScrollPane, BorderLayout.PAGE_END);
         
 		JScrollPane treeScroll = new JScrollPane(fileTree);
 		this.add(treeScroll, BorderLayout.CENTER);
@@ -99,6 +136,88 @@ public class ComputerFileBrowser extends JPanel
 		currentPath.setOpaque(true);
 		currentPath.setBackground(Color.GRAY);
 		currentPath.setForeground(Color.WHITE);
+	}
+	
+	private void initFileTable()
+	{
+		ArrayList<MyFtpFile> roots = fileBrowser.getRoots();
+		ArrayList<MyFtpFile> files = 
+				fileBrowser.scanDirectory(roots.get(0).getPath());
+		
+		Collections.sort(files);
+		
+		fileTable = new JTable();
+		fileTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		fileTable.setAutoCreateRowSorter(true);
+		
+        /*listSelectionListener = new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent lse) 
+            {
+            	ListSelectionModel model = fileTable.getSelectionModel();
+            	if(!model.getValueIsAdjusting())
+            	{
+            		int row = model.getLeadSelectionIndex();
+            		System.out.println("Row whatsit: " + row);
+            	}
+                //setFileDetails( ((FileTableModel)fileTable.getModel()).getFile(row) );
+            }
+        };*/
+        
+        tableMouseAdapter = new MouseAdapter() {
+            public void mouseClicked(final MouseEvent me) 
+            {
+            	JTable table =(JTable) me.getSource();
+                Point p = me.getPoint();
+                int row = table.rowAtPoint(p);
+                currentPath.setText(((FileTableModel)fileTable.getModel()).getFile(row).getPath().toString());
+                
+            	if(me.getClickCount() == 2)
+            	{
+            		System.out.println("Double clicked.");
+            		wasDoubleClick = true;
+            	}
+            	else
+            	{
+            		currentPath.setText(((FileTableModel)fileTable.getModel()).getFile(row).getPath().toString());
+            		clickTimer = new Timer(clickInterval, new ActionListener()
+            		{
+            			public void actionPerformed(ActionEvent evt) 
+            			{
+            				/*JTable table =(JTable) me.getSource();
+                            Point p = me.getPoint();
+                            int row = table.rowAtPoint(p);*/
+                            
+                            if (wasDoubleClick)
+                                wasDoubleClick = false;
+                            else 
+                            {
+                            	/* simple click. */
+                            	System.out.println("Simple click");
+                            	changeDirectory();
+                            }
+                        }
+            		});
+            		
+            		clickTimer.setRepeats(false);
+            		clickTimer.start();
+            	}
+            }
+        };
+        
+        fileTable.addMouseListener(tableMouseAdapter);
+        //fileTable.getSelectionModel().addListSelectionListener(listSelectionListener);
+        fileTableModel = new FileTableModel();
+        fileTable.setModel(fileTableModel);
+        fileTable.setShowGrid(false);
+        
+        loadTableData(files);
+	}
+	
+	private void changeDirectory()
+	{
+		//loadChildren();
+		
 	}
 	
 	private void initFileTree()
@@ -135,41 +254,41 @@ public class ComputerFileBrowser extends JPanel
 		fileTree = new JTree(fileTreeModel);
 		
 		fileTree.setRootVisible(false);
-		//fileTree.expandPath(path)
         
         fileTree.addTreeSelectionListener(treeSelectionListener);
         fileTree.setCellRenderer(new FileTreeCellRenderer());
         
         /* Should not be in this method. */
         currentPath.setText("currently selected: " + roots.get(0).getDisplayName());
+        
 	}
 	
-	private void initFileList()
-	{
-		ArrayList<MyFtpFile> roots = fileBrowser.getRoots();
-		ArrayList<MyFtpFile> files = 
-				fileBrowser.scanDirectory(roots.get(0).getPath());
-		
-		Collections.sort(files);
-		
-		fileListModel = new DefaultListModel<File>();
-	    fileList = new JList<File>(fileListModel);
-	    
-	    fileList.setCellRenderer(new FileListCellRenderer());
-	    
-	    loadList(files);
-	}
-	
-	private void loadList(final ArrayList<MyFtpFile> files)
+	private void loadTableData(final ArrayList<MyFtpFile> files)
 	{
         SwingUtilities.invokeLater(new Runnable() {
             public void run() 
             {
-            	fileListModel.clear();
-            	for(MyFtpFile file : files)
-            		fileListModel.add(0, file);
+                //fileTable.getSelectionModel().removeListSelectionListener(listSelectionListener);
+                fileTableModel.setFiles(files);
+                //fileTable.getSelectionModel().addListSelectionListener(listSelectionListener);
+
+                fileTable.setRowHeight(icon_width);
+                setTableColumnWidth(0);
             }
         });
+		
+	}
+	
+	private void setTableColumnWidth(int column)
+	{
+		TableColumn tableColumn = fileTable.getColumnModel().getColumn(column);
+		
+		if(column == 0)
+		{
+			tableColumn.setPreferredWidth(this.icon_width + this.icon_margin);
+			tableColumn.setMinWidth(this.icon_width + this.icon_margin);
+			tableColumn.setMaxWidth(this.icon_width + this.icon_margin + 10);
+		}
 	}
 	
     private void loadChildren(final DefaultMutableTreeNode node) 
@@ -186,7 +305,7 @@ public class ComputerFileBrowser extends JPanel
                 if (file.isDir()) 
                 {
                 	System.out.println("fetching...");
-                	currentPath.setText(" Selected file: " + file.toString());
+                	currentPath.setText(" Selected file: " + file.getPath().toString());
                     
                 	ArrayList<MyFtpFile> files = 
                     		fileBrowser.scanDirectory(file.getPath());
@@ -200,12 +319,13 @@ public class ComputerFileBrowser extends JPanel
                         		publish(child);
                     }
                     
-                    loadList(files);
+                    //loadList(files);
+                    loadTableData(files);
                 }
                 return null;
             }
 
-            @Override
+			@Override
             protected void process(List<MyFtpFile> chunks) 
             {
                 for (MyFtpFile child : chunks) 
@@ -222,83 +342,20 @@ public class ComputerFileBrowser extends JPanel
         };
         worker.execute();
     }
-
-}
-
-/* TODO: make the same format as FileTreeCellRenderer. */
-
-class FileListCellRenderer extends JLabel implements ListCellRenderer
-{
-	public FileListCellRenderer()
-	{
-		setOpaque(true);
-		setHorizontalAlignment(CENTER);
-		setVerticalAlignment(CENTER);
-	}
-
-
-	public Component getListCellRendererComponent(JList list, Object value,
-			int index, boolean isSelected, boolean cellHasFocus)
-	{
-		MyFtpFile file = (MyFtpFile)value;
-		
-		if(file.isDir())
-			this.setIcon(ComputerFileBrowser.ICON_FOLDER_REDIM);
-		else
-			this.setIcon(ComputerFileBrowser.ICON_FILE_REDIM);
-		
-		this.setAlignmentX((float)0.0);
-		
-		this.setText(file.getDisplayName());
-
-		if (isSelected)
-		{
-			setBackground(list.getSelectionBackground());
-			setForeground(list.getSelectionForeground());
-		} 
-		else
-		{
-			setBackground(list.getBackground());
-			setForeground(list.getForeground());
-		}
-
-		return this;
-	}
-}
-
-
-class FileTreeCellRenderer extends DefaultTreeCellRenderer 
-{
-    private JLabel label;
-
-    FileTreeCellRenderer() 
+    
+    public Path getCurrentPath()
     {
-        label = new JLabel();
-        label.setOpaque(true);
+    	int row = 0;
+    	ListSelectionModel model = fileTable.getSelectionModel();
+    	if(!model.getValueIsAdjusting())
+    		row = model.getLeadSelectionIndex();
+    	
+    	return fileTableModel.getFile(row).getPath();
     }
 
-    @Override
-    public Component getTreeCellRendererComponent(JTree tree, 
-    	Object value, boolean selected, boolean expanded, 
-    	boolean leaf, int row, boolean hasFocus) 
-    {
-
-        DefaultMutableTreeNode node = (DefaultMutableTreeNode)value;
-        MyFtpFile file = (MyFtpFile)node.getUserObject();
-        
-        label.setIcon(ComputerFileBrowser.ICON_FOLDER_REDIM);
-        label.setText(file.getDisplayName());
-
-        if (selected) 
-        {
-            label.setBackground(backgroundSelectionColor);
-            label.setForeground(textSelectionColor);
-        } else 
-        {
-            label.setBackground(backgroundNonSelectionColor);
-            label.setForeground(textNonSelectionColor);
-        }
-
-        return label;
-    }
 }
+
+
+
+
+

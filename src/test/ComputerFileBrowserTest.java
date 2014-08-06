@@ -1,16 +1,8 @@
 package test;
-import gui.ComputerFileBrowser;
 import gui.MainPanel;
-
-import java.io.File;
-import java.nio.file.FileSystems;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Scanner;
 
 import javax.swing.JFrame;
 import javax.swing.UIManager;
-
 
 
 public class ComputerFileBrowserTest
@@ -33,7 +25,6 @@ public class ComputerFileBrowserTest
         JFrame frame = new JFrame("MyFTP");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        //frame.add(new ComputerFileBrowser());
         frame.add(new MainPanel());
 
         frame.pack();
