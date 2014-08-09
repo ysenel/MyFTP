@@ -1,3 +1,5 @@
+package connection;
+
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Properties;
@@ -10,22 +12,24 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
 
+import controller.UserID;
 
-public class Connection {
+
+public class SftpConnection {
 	
-	private String server;
-	private String pass;
-	private String login;
+
+	
+	/******* OU ********/
+	private UserID uid;
+	
 	private Boolean connected;
 	private ChannelSftp channelSftp;
 	private Session session;
 	private Channel channel;
 	
-	public Connection(String server, String login, String pass){
+	
+	public SftpConnection(){
 		this.connected = false;
-		this.login = login;
-		this.pass = pass;
-		this.server = server;
 		this.channelSftp = null;
 		this.session = null;
 		this.channel = null;
@@ -48,13 +52,19 @@ public class Connection {
 		this.connected = connected;
 	}
 	
-	public void connect(){
+	public void connect(UserID uid)
+	{
+		this.connect(uid.getServer(), uid.getLogin(), uid.getPassword());
+	}
+	
+	public void connect(String serverName, String userLogin, String userPassword){
+		System.out.println(serverName + " " + userLogin + " " + userPassword);
 		int port = 22;
 		JSch jsch = new JSch();
 		try {
 			
-			this.setSession(jsch.getSession(this.login, this.server, port));
-			this.session.setPassword(pass.getBytes(Charset.forName("ISO-8859-1")));
+			this.setSession(jsch.getSession(userLogin, serverName, port));
+			this.session.setPassword(userPassword.getBytes(Charset.forName("ISO-8859-1")));
 	        Properties config = new java.util.Properties();
 	        config.put("StrictHostKeyChecking", "no");
 	        session.setConfig(config);
@@ -66,7 +76,6 @@ public class Connection {
 	        this.setConnected(true);
 	        
 		} catch (JSchException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -78,7 +87,6 @@ public class Connection {
 		try {
 			this.channelSftp.get(sourceFile, destinationFile);
 		} catch (SftpException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -89,9 +97,9 @@ public class Connection {
 	}
 	
 	public ArrayList<String> ls(){
-		ArrayList<String> fileAndDirectory = new  ArrayList();
+		ArrayList<String> fileAndDirectory = new  ArrayList<String>();
 		try {
-			ArrayList<String> tmp = new  ArrayList();
+			ArrayList<String> tmp = new  ArrayList<String>();
 			Vector filelist = ((ChannelSftp) this.channel).ls(".");
 	        for(int i=0; i<filelist.size();i++){
 	            tmp.add(filelist.get(i).toString());
@@ -100,7 +108,6 @@ public class Connection {
 	        }
 	           
 		} catch (SftpException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 

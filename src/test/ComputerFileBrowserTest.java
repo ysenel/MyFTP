@@ -4,12 +4,14 @@ import gui.MainPanel;
 import javax.swing.JFrame;
 import javax.swing.UIManager;
 
+import connection.SftpConnection;
+
 
 public class ComputerFileBrowserTest
 {
 	private static boolean useSystemLookAndFeel = true;
 	
-    private static void createAndShowGUI() 
+    private static void createAndShowGUI(SftpConnection conn) 
     {
         if (useSystemLookAndFeel) 
         {
@@ -25,7 +27,7 @@ public class ComputerFileBrowserTest
         JFrame frame = new JFrame("MyFTP");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        frame.add(new MainPanel());
+        frame.add(new MainPanel(conn));
 
         frame.pack();
         frame.setVisible(true);
@@ -34,10 +36,13 @@ public class ComputerFileBrowserTest
 
     public static void main(String[] args) 
     {
+    	
+    	
         javax.swing.SwingUtilities.invokeLater(new Runnable() {
             public void run() 
             {
-                createAndShowGUI();
+            	SftpConnection myConnection = new SftpConnection();
+                createAndShowGUI(myConnection);
             }
         });
     }

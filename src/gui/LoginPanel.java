@@ -7,13 +7,18 @@ import java.awt.event.ActionListener;
 
 import javax.swing.JButton;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
-public class LoginPanel extends JPanel implements ActionListener
+import controller.UserID;
+
+
+
+public class LoginPanel extends JPanel
 {
 	private JTextField login;
-	private JTextField server_address;
-	private JTextField password;
+	private JTextField serverAddress;
+	private JPasswordField password;
 	
 	private JButton connect;
 	
@@ -22,37 +27,50 @@ public class LoginPanel extends JPanel implements ActionListener
 		this.setLayout(new FlowLayout());
 		//this.setPreferredSize(new Dimension(400, 100));
 		
-		server_address = new JTextField(15);
-		server_address.setText("server_address");
-		this.add(server_address);
+		serverAddress = new JTextField(15);
+		serverAddress.setText("server_address");
+		this.add(serverAddress);
 		
 		login = new JTextField(15);
 		login.setText("Login");
 		this.add(login);
 		
-		password = new JTextField(15);
+		password = new JPasswordField(15);
 		password.setText("password");
+		
 		this.add(password);
 		
 		connect = new JButton("connect");
 		this.add(connect);
 		
-		connect.addActionListener(this);
 	}
+	
 
-	@Override
-	public void actionPerformed(ActionEvent event)
-	{
-		Object event_source = event.getSource();
-		
-		if(event_source == connect)
-		{
-			System.out.println("address: " + server_address.getText());
-			System.out.println("login: " + login.getText());
-			System.out.println("pass: " + password.getText());
-			
-		}
+	
+	public JButton getConnectionButton(){
+		return this.connect;
 	}
+	
+	public UserID getUserId()
+	{
+		return new UserID(login.getText(), password.getText(),
+				serverAddress.getText());
+	}
+	
+	/*public String getServerName(){
+		return this.serverAddress.getText();
+	}
+	
+	public String getLogin(){
+		return this.login.getText();
+	}
+	
+	public String getPassword(){
+		return this.password.getText();
+	}*/
+
+	
+
 	
 	
 }
