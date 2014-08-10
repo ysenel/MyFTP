@@ -19,7 +19,7 @@ public class SftpConnection {
 	
 
 	
-	/******* OU ********/
+
 	private UserID uid;
 	
 	private Boolean connected;
@@ -87,12 +87,19 @@ public class SftpConnection {
 		try {
 			this.channelSftp.get(sourceFile, destinationFile);
 		} catch (SftpException e) {
+			System.out.println("ERROR DOWNLOAD");
 			e.printStackTrace();
 		}
 		
 	}
 	
-	public void upload(String sourceFile, String destionationFile){
+	public void upload(String sourceFile, String destinationFile){
+		try {
+			this.channelSftp.put(sourceFile, destinationFile);
+		} catch (SftpException e) {
+			System.out.println("ERROR UPLOAD");
+			e.printStackTrace();
+		}
 		
 	}
 	
@@ -115,7 +122,13 @@ public class SftpConnection {
 		
 	}
 	
-	public void cd(){
+	public void changeDirectory(String newDirectory){
+		try {
+			this.channelSftp.cd(newDirectory);
+		} catch (SftpException e) {
+			System.out.println("ERROR CHANGE DIRECTORY");
+			e.printStackTrace();
+		}
 		
 	}
 	
